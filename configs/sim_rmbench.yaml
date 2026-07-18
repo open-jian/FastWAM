@@ -1,0 +1,65 @@
+# @package _global_
+
+defaults:
+  - train
+  - override /task: robotwin_uncond_3cam_384_1e-4
+  - _self_
+
+ckpt: null
+gpu_id: 0
+seed: 0
+
+model:
+  load_text_encoder: true
+  skip_dit_load_from_pretrain: true
+  action_dit_pretrained_path: null
+
+EVALUATION:
+  rmbench_root: ../../benchmark/RMBench/RMBench
+  policy_name: fastwam_policy
+  task_name: null
+  task_config: demo_clean
+  instruction_type: unseen
+  eval_num_episodes: 100
+  output_dir: ./evaluate_results/rmbench/${hydra:runtime.choices.task}/${now:%Y%m%d_%H%M%S}
+
+  # A safe RM-Bench result-directory component. The real checkpoint path is
+  # forwarded separately as checkpoint_path.
+  official_result_tag: null
+
+  # Preserve the released RoboTwin checkpoint's inference recipe.
+  action_horizon: 32
+  replan_steps: 24
+  num_inference_steps: ${eval_num_inference_steps}
+  sigma_shift: null
+  text_cfg_scale: 1.0
+  negative_prompt: ""
+  rand_device: cpu
+  tiled: false
+  timing_enabled: false
+  skip_get_obs_within_replan: true
+
+  dataset_stats_path: ./checkpoints/fastwam_release/robotwin_uncond_3cam_384_dataset_stats.json
+  device: cuda
+
+MULTIRUN:
+  # The nine tasks reported in the RM-Bench paper.
+  tasks:
+    - observe_and_pickup
+    - rearrange_blocks
+    - put_back_block
+    - swap_blocks
+    - swap_T
+    - battery_try
+    - blocks_ranking_try
+    - cover_blocks
+    - press_button
+  num_gpus: 1
+  max_tasks_per_gpu: 1
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: .
+  output_subdir: null
