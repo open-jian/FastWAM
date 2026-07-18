@@ -1,0 +1,65 @@
+task_name: put_back_block
+dataset_root: ${oc.env:RMBENCH_LEROBOT_ROOT,/data2/jian/project/Light-WAM/data/rmbench/tasks}
+
+train:
+  _target_: fastwam.datasets.lerobot.robot_video_dataset.RobotVideoDataset
+  dataset_dirs:
+    - ${data.dataset_root}/${data.task_name}
+  shape_meta:
+    images:
+      - key: cam_high
+        raw_shape: [3, 240, 320]
+        shape: [3, 240, 320]
+      - key: cam_left_wrist
+        raw_shape: [3, 240, 320]
+        shape: [3, 240, 320]
+      - key: cam_right_wrist
+        raw_shape: [3, 240, 320]
+        shape: [3, 240, 320]
+    action:
+      - key: default
+        raw_shape: 14
+        shape: 14
+    state:
+      - key: default
+        raw_shape: 14
+        shape: 14
+  num_frames: 33
+  global_sample_stride: 1
+  action_video_freq_ratio: 4
+  video_size: [384, 320]
+  camera_key: null
+  val_set_proportion: 0.0
+  is_training_set: true
+  # Compute normalization from all 50 official demonstrations and save it in
+  # the training run directory. Do not reuse the RoboTwin pretraining stats.
+  pretrained_norm_stats: null
+  skip_padding_as_possible: false
+  concat_multi_camera: robotwin
+  processor:
+    _target_: fastwam.datasets.lerobot.processors.fastwam_processor.FastWAMProcessor
+    shape_meta: ${data.train.shape_meta}
+    num_obs_steps: ${data.train.num_frames}
+    num_output_cameras: 3
+    action_output_dim: 14
+    proprio_output_dim: 14
+    action_state_transforms: null
+    use_stepwise_action_norm: false
+    norm_default_mode: z-score
+    norm_exception_mode: null
+    action_state_merger:
+      _target_: fastwam.datasets.lerobot.transforms.action_state_merger.ConcatLeftAlign
+    train_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [240, 320]
+    val_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [240, 320]
+  text_embedding_cache_dir: ./data/text_embeds_cache/rmbench
+  context_len: 128
+
+# RMBench's published protocol trains on all 50 demonstrations and evaluates
+# with online rollouts. It does not prescribe a held-out offline validation set.
+val: null

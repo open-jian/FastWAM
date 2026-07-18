@@ -67,6 +67,26 @@ def test_rmbench_config_preserves_zero_shot_robotwin_recipe() -> None:
     assert list(cfg.MULTIRUN.tasks) == OFFICIAL_TASKS
 
 
+def test_rmbench_finetune_config_uses_official_single_task_data() -> None:
+    with initialize_config_dir(version_base="1.3", config_dir=str(ROOT / "configs")):
+        cfg = compose(
+            config_name="train",
+            overrides=["task=rmbench_finetune_3cam_384_1e-5"],
+        )
+
+    assert cfg.data.task_name == "put_back_block"
+    assert cfg.data.train.val_set_proportion == 0.0
+    assert cfg.data.train.pretrained_norm_stats is None
+    assert cfg.data.val is None
+    assert cfg.data.train.num_frames == 33
+    assert cfg.data.train.action_video_freq_ratio == 4
+    assert cfg.data.train.concat_multi_camera == "robotwin"
+    assert cfg.model.skip_dit_load_from_pretrain is True
+    assert cfg.model.action_dit_pretrained_path is None
+    assert cfg.learning_rate == 1.0e-5
+    assert cfg.resume.endswith("robotwin_uncond_3cam_384.pt")
+
+
 def test_rmbench_official_result_tags_are_isolated_and_safe() -> None:
     cfg = OmegaConf.create({"seed": 7, "EVALUATION": {"official_result_tag": None}})
     assert _resolve_official_result_tag(cfg, "checkpoint") == "checkpoint_seed7"
